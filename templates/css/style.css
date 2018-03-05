@@ -1,0 +1,14 @@
+a:visited {
+    color:#0000ff
+}
+a:hover {
+    color:#aa0000;
+}
+
+body {
+    font-family:Verdana, Arial;
+}
+
+header {
+    background-color:#111E7A;
+}
