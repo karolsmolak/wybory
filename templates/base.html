@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang = "pl">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width = device-width, initial-scale = 1">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <script src="../js/jquery-3.3.1.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/style.css">
+    <script src="../js/Chart.min.js"></script>
+    <link href="../jsmaps/jsmaps.css" rel="stylesheet" type="text/css" />
+    <script src="../jsmaps/jsmaps-libs.js" type="text/javascript"></script>
+    <script src="../jsmaps/jsmaps-panzoom.js"></script>
+    <script src="../jsmaps/jsmaps.min.js" type="text/javascript"></script>
+    <script src="../maps/poland.js" type="text/javascript"></script>
+    <style>
+
+    </style>
+    <title>Wybory Prezydenta Rzeczypospolitej Polskiej 2000</title>
+</head>
+<body background="../images/polaroid.png">
+    <header>
+        <h1>Wybory Prezydenta Rzeczypospolitej Polskiej 2000 - wyniki oficjalne</h1>
+    </header>
+    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+        <a class="navbar-brand" href="../kraj/polska.html">Polska</a>
+        <ul class="navbar-nav">
+            {%- if linki is defined %}
+                {%- for region, link in linki.items() %}
+                    <li class = "nav-item"><a class="nav-link" href = {{ link }} >{{ region }}</a></li>
+                {%- endfor %}
+            {%- endif %}
+            {%- if gdzie_jesteśmy != "Polska" %}
+            <li class="nav-item"><a class="nav-link active" href="#">{{ gdzie_jesteśmy }}</a></li>
+            {%- endif %}
+            {%- if dzieci is defined %}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">...
+                <span class="caret"></span></a>
+                {%- if gdzie_jesteśmy != "Polska" %}
+                <ul class="dropdown-menu scrollable-menu">
+                    {%- for region, link in dzieci.items()  %}
+                    <li class = "dropdown-item"><a href={{ link }}>{{region}}</a></li>
+                    {%- endfor %}
+                </ul>
+                {%- else %}
+                <ul class="dropdown-menu" style="height: 300px; width: 300px">
+                    <li class="jsmaps-wrapper" id="poland-map"></li>
+                </ul>
+                {%- endif %}
+            </li>
+            {%- endif %}
+        </ul>
+    </nav>
+    <div class = "container-fluid">
+        <div class = "row">
+            <section class = "col-lg-4">
+                <h2>Wyniki poszczególnych kandydatów</h2>
+                <table class = "table">
+                    <thead>
+                        <tr>
+                            <th>Kandydat</th>
+                            <th>Liczba głosów</th>
+                            <th>Procentowa liczba głosów</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {%- for key, value in wyniki.items() %}
+                        <tr>
+                            <td>{{ key }}</td>
+                            <td>{{ value }}</td>
+                            {%- if statystyki['Głosy ważne'] != 0 %}
+                            <td>{{ "{0:.2f}%".format(100 * value / statystyki['Głosy ważne'], 2) }}</td>
+                            {%- else %}
+                            <td>0.00%</td>
+                            {%- endif %}
+                        </tr>
+                    {%- endfor %}
+                    </tbody>
+                </table>
+            </section>
+            <section class = "col-lg-5">
+                <h2>Procentowa liczba głosów dla poszczególnych kandydatów</h2>
+                <div id = "chart-container">
+                     <canvas id="chart"></canvas>
+                </div>
+            </section>
+            <section class = "col-lg-3 text-center">
+                <h2>Statystyka ogółem</h2>
+                <dl>
+                    <dt>Liczba uprawnionych do głosowania</dt>
+                    <dd>{{ statystyki['Uprawnieni'] }}</dd>
+                    <dt>Liczba wydanych kart do głosowania</dt>
+                    <dd>{{ statystyki['Wydane karty'] }}</dd>
+                    <dt>Liczba kart wyjętych z urny</dt>
+                    <dd>{{ statystyki['Głosy ważne'] + statystyki['Głosy nieważne'] }}</dd>
+                    <dt>Liczba ważnych głosów</dt>
+                    <dd>{{ statystyki['Głosy ważne'] }}</dd>
+                    <dt>Liczba nieważnych głosów</dt>
+                    <dd>{{ statystyki['Głosy nieważne'] }}</dd>
+                    <dt>Frekwencja</dt>
+                    <dd>{{ "{0:.2f}%".format(100 * statystyki['Wydane karty'] / statystyki['Uprawnieni'], 2) }}</dd>
+                </dl>
+            </section>
+        </div>
+    </div>
+</body>
+
+<script>
+
+    $(function() {
+        var default_colors = ['#3366CC','#DC3912','#FF9900','#109618','#990099','#3B3EAC','#0099C6','#DD4477','#66AA00','#B82E2E','#316395','#994499','#22AA99','#AAAA11','#6633CC','#E67300','#8B0707','#329262','#5574A6','#3B3EAC'];
+
+        var ctx = document.getElementById('chart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'pie',
+
+            data: {
+                labels: {{ wyniki.keys() | list }},
+                datasets: [{
+                    backgroundColor: default_colors,
+                    borderWidth: 0.8,
+                    data: {{ wyniki.values() | list }}
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+
+        });
+
+        $('#poland-map').JSMaps({
+            map: 'poland',
+            stateClickAction:'url',
+            hrefTarget: '_self',
+            displayAbbreviations: false,
+            selectElement: false
+        });
+
+    });
+
+</script>
+
+</html>
