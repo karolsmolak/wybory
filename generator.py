@@ -3,6 +3,20 @@ import csv
 import jinja2
 import os
 
+
+def create_directories_for_html():
+    if not os.path.exists('./webpages/kraj'):
+        os.mkdir('./webpages/kraj')
+    if not os.path.exists('./webpages/wojewodztwa'):
+        os.mkdir('./webpages/wojewodztwa')
+    if not os.path.exists('./webpages/okregi'):
+        os.mkdir('./webpages/okregi')
+    if not os.path.exists('./webpages/gminy'):
+        os.mkdir('./webpages/gminy')
+    if not os.path.exists('./webpages/obwody'):
+        os.mkdir('./webpages/obwody')
+
+
 class Kraj:
     def __init__(self):
         self.wojewodztwa = {}
@@ -16,20 +30,9 @@ class Kraj:
                 break
 
     def generuj(self):
-        if not os.path.exists('./webpages/kraj'):
-            os.mkdir('./webpages/kraj')
-        if not os.path.exists('./webpages/wojewodztwa'):
-            os.mkdir('./webpages/wojewodztwa')
-        if not os.path.exists('./webpages/okregi'):
-            os.mkdir('./webpages/okregi')
-        if not os.path.exists('./webpages/gminy'):
-            os.mkdir('./webpages/gminy')
-        if not os.path.exists('./webpages/obwody'):
-            os.mkdir('./webpages/obwody')
-
         template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
-                        dzieci = {wojewodztwo.nazwa : wojewodztwo.get_html() for wojewodztwo in self.wojewodztwa.values()},
-                        gdzie_jesteśmy = 'Polska').dump('./webpages/kraj/polska.html')
+                        dzieci={wojewodztwo.nazwa: wojewodztwo.get_html() for wojewodztwo in self.wojewodztwa.values()},
+                        gdzie_jesteśmy='Polska').dump('./webpages/kraj/polska.html')
         linki = {}
         for wojewodztwo in self.wojewodztwa.values():
             wojewodztwo.generuj(linki)
@@ -47,9 +50,10 @@ class Wojewodztwo:
         self.okregi[row['Nr okr.']].propaguj(row)
 
     def generuj(self, linki_do_rodziców):
-        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(), linki=linki_do_rodziców,
+        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
+                        linki=linki_do_rodziców,
                         dzieci={okrag.to_string(): okrag.get_html() for okrag in self.okregi.values()},
-                        gdzie_jesteśmy = self.nazwa).dump(
+                        gdzie_jesteśmy=self.nazwa).dump(
             './webpages/wojewodztwa/' + self.nazwa + '.html')
         linki_do_rodziców[self.nazwa] = self.get_html()
         for okrag in self.okregi.values():
@@ -75,7 +79,8 @@ class Okrag:
         self.gminy[row['Kod gminy']].propaguj(row)
 
     def generuj(self, linki_do_rodziców):
-        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(), linki=linki_do_rodziców, gdzie_jesteśmy = self.to_string(),
+        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
+                        linki=linki_do_rodziców, gdzie_jesteśmy=self.to_string(),
                         dzieci={gmina.nazwa: gmina.get_html() for gmina in self.gminy.values()}).dump(
             './webpages/okregi/' + self.nr + '.html'
         )
@@ -132,7 +137,8 @@ class Obwod:
         self.wynik.add({x: row[x] for x in list(row.keys())[7:]})
 
     def generuj(self, linki_do_rodziców):
-        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(), linki=linki_do_rodziców, gdzie_jesteśmy = self.adres).dump(
+        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
+                        linki=linki_do_rodziców, gdzie_jesteśmy=self.adres).dump(
             './webpages/obwody/' + str(self.id) + '.html')
 
     def get_html(self):
@@ -177,4 +183,6 @@ templateLoader = jinja2.FileSystemLoader(searchpath="./templates")
 templateEnv = jinja2.Environment(loader=templateLoader)
 TEMPLATE_FILE = 'base.html'
 template = templateEnv.get_template(TEMPLATE_FILE)
+
+create_directories_for_html()
 polska.generuj()
