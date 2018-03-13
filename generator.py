@@ -17,140 +17,132 @@ def create_directories_for_html():
         os.mkdir('./webpages/obwody')
 
 
-class Kraj:
+class Region:
     def __init__(self):
-        self.wojewodztwa = {}
         self.wynik = Wynik({})
+        self.podregiony = {}
 
-    def propaguj(self, row):
+    def process_csv_row(self, row):
         self.wynik.add({x: row[x] for x in list(row.keys())[7:]})
-        for k, wojewodztwo in self.wojewodztwa.items():
-            if row['Nr okr.'] in wojewodztwo.okregi:
-                wojewodztwo.propaguj(row)
+        self.push_down(row)
+
+    def push_down(self):
+        pass
+
+    def generate(self, linki_do_rodzicow):
+        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
+                        linki=linki_do_rodzicow, gdzie_jesteśmy=self.__str__(),
+                        dzieci={podregion.__str__(): '../' + podregion.get_html() for podregion in self.podregiony.values()}).dump(
+            './webpages/' + self.get_html())
+        if self.__str__() != "Polska":
+            linki_do_rodzicow[self.__str__()] = '../' + self.get_html()
+        for podregion in self.podregiony.values():
+            podregion.generate(linki_do_rodzicow)
+            del linki_do_rodzicow[podregion.__str__()]
+
+    def get_html(self):
+        pass
+
+
+class Kraj(Region):
+    def __init__(self):
+        super().__init__()
+
+    def push_down(self, row):
+        for k, wojewodztwo in self.podregiony.items():
+            if row['Nr okr.'] in wojewodztwo.podregiony:
+                wojewodztwo.process_csv_row(row)
                 break
 
-    def generuj(self):
-        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
-                        dzieci={wojewodztwo.nazwa: wojewodztwo.get_html() for wojewodztwo in self.wojewodztwa.values()},
-                        gdzie_jesteśmy='Polska').dump('./webpages/kraj/polska.html')
-        linki = {}
-        for wojewodztwo in self.wojewodztwa.values():
-            wojewodztwo.generuj(linki)
-            del linki[wojewodztwo.nazwa]
+    def dodaj_info_o_okręgach(self, row):
+        wojewodztwo = row['wojewodztwo']
+        if wojewodztwo not in self.podregiony:
+            self.podregiony[wojewodztwo] = Wojewodztwo(wojewodztwo)
+        self.podregiony[wojewodztwo].podregiony[row['nr']] = Okrag(
+            row['nr'], row['siedziba'])
+
+    def get_html(self):
+        return 'kraj/polska.html'
+
+    def __str__(self):
+        return "Polska"
 
 
-class Wojewodztwo:
+class Wojewodztwo(Region):
     def __init__(self, nazwa):
-        self.okregi = {}
-        self.wynik = Wynik({})
+        super().__init__()
         self.nazwa = nazwa
 
-    def propaguj(self, row):
-        self.wynik.add({x: row[x] for x in list(row.keys())[7:]})
-        self.okregi[row['Nr okr.']].propaguj(row)
-
-    def generuj(self, linki_do_rodziców):
-        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
-                        linki=linki_do_rodziców,
-                        dzieci={okrag.to_string(): okrag.get_html() for okrag in self.okregi.values()},
-                        gdzie_jesteśmy=self.nazwa).dump(
-            './webpages/wojewodztwa/' + self.nazwa + '.html')
-        linki_do_rodziców[self.nazwa] = self.get_html()
-        for okrag in self.okregi.values():
-            okrag.generuj(linki_do_rodziców)
-            del linki_do_rodziców[okrag.to_string()]
+    def push_down(self, row):
+        self.podregiony[row['Nr okr.']].process_csv_row(row)
 
     def get_html(self):
-        return '../wojewodztwa/' + self.nazwa + '.html'
+        return 'wojewodztwa/' + self.nazwa + '.html'
+
+    def __str__(self):
+        return self.nazwa
 
 
-class Okrag:
-    def __init__(self, nr, siedziba, wojewodztwo):
+class Okrag(Region):
+    def __init__(self, nr, siedziba):
+        super().__init__()
         self.nr = nr
         self.siedziba = siedziba
-        self.wojewodztwo = wojewodztwo
-        self.wynik = Wynik({})
-        self.gminy = {}
 
-    def propaguj(self, row):
-        self.wynik.add({x: row[x] for x in list(row.keys())[7:]})
-        if row['Kod gminy'] not in self.gminy:
-            self.gminy[row['Kod gminy']] = Gmina(row['Kod gminy'], self.nr, row['Gmina'])
-        self.gminy[row['Kod gminy']].propaguj(row)
-
-    def generuj(self, linki_do_rodziców):
-        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
-                        linki=linki_do_rodziców, gdzie_jesteśmy=self.to_string(),
-                        dzieci={gmina.nazwa: gmina.get_html() for gmina in self.gminy.values()}).dump(
-            './webpages/okregi/' + self.nr + '.html'
-        )
-        linki_do_rodziców[self.to_string()] = self.get_html()
-        for gmina in self.gminy.values():
-            gmina.generuj(linki_do_rodziców)
-            del linki_do_rodziców[gmina.nazwa]
+    def push_down(self, row):
+        if row['Kod gminy'] not in self.podregiony:
+            self.podregiony[row['Kod gminy']] = Gmina(row['Kod gminy'], row['Gmina'])
+        self.podregiony[row['Kod gminy']].process_csv_row(row)
 
     def get_html(self):
-        return '../okregi/' + self.nr + '.html'
+        return 'okregi/' + self.nr + '.html'
 
-    def to_string(self):
+    def __str__(self):
         return 'okrag nr ' + self.nr + ' (' + self.siedziba + ')'
 
 
-class Gmina:
-    def __init__(self, kod_gminy, nr_okregu, nazwa):
-        self.nr_okregu = nr_okregu
+class Gmina(Region):
+    def __init__(self, kod_gminy, nazwa):
+        super().__init__()
         self.kod_gminy = kod_gminy
         self.nazwa = nazwa
-        self.obwody = {}
-        self.wynik = Wynik({})
 
-    def propaguj(self, row):
-        self.wynik.add({x: row[x] for x in list(row.keys())[7:]})
-        self.obwody[Obwod.max_id] = Obwod(Obwod.max_id, row['Kod gminy'], row['Adres'])
-        self.obwody[Obwod.max_id].propaguj(row)
+    def push_down(self, row):
+        self.podregiony[Obwod.max_id] = Obwod(Obwod.max_id, row['Adres'])
+        self.podregiony[Obwod.max_id].process_csv_row(row)
         Obwod.max_id += 1
 
-    def generuj(self, linki_do_rodziców):
-        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
-                        linki=linki_do_rodziców,
-                        gdzie_jesteśmy=self.nazwa,
-                        dzieci={obwod.adres: obwod.get_html() for obwod in self.obwody.values()}).dump(
-            './webpages/gminy/' + self.kod_gminy + '.html')
-        linki_do_rodziców[self.nazwa] = self.get_html()
-        for obwod in self.obwody.values():
-            obwod.generuj(linki_do_rodziców)
-
     def get_html(self):
-        return '../gminy/' + self.kod_gminy + '.html'
+        return 'gminy/' + self.kod_gminy + '.html'
+
+    def __str__(self):
+        return self.nazwa
 
 
-class Obwod:
+class Obwod(Region):
     max_id = 0
 
-    def __init__(self, id, kod_gminy, adres):
+    def __init__(self, id, adres):
+        super().__init__()
         self.id = id
-        self.kod_gminy = kod_gminy
         self.adres = adres
-        self.wynik = Wynik({})
 
-    def propaguj(self, row):
-        self.wynik.add({x: row[x] for x in list(row.keys())[7:]})
-
-    def generuj(self, linki_do_rodziców):
-        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
-                        linki=linki_do_rodziców, gdzie_jesteśmy=self.adres).dump(
-            './webpages/obwody/' + str(self.id) + '.html')
+    def push_down(self, row):
+        pass
 
     def get_html(self):
-        return '../obwody/' + str(self.id) + '.html'
+        return 'obwody/' + str(self.id) + '.html'
+
+    def __str__(self):
+        return self.adres
 
 
 class Wynik:
     def __init__(self, wyniki):
         self.wyniki = wyniki
 
-    def add(self, podwynik):
-        for k, v in podwynik.items():
+    def add(self, wynik_podregionu):
+        for k, v in wynik_podregionu.items():
             if k in self.wyniki:
                 self.wyniki[k] += int(v)
             else:
@@ -163,26 +155,19 @@ class Wynik:
         return {x: self.wyniki[x] for x in list(self.wyniki.keys())[:5]}
 
 
+def process_csv(file, row_function):
+    with open(file, 'r') as csvfile:
+        read = csv.DictReader(csvfile, delimiter=',', quotechar='"')
+        for row in read:
+            row_function(row)
+
+
 polska = Kraj()
-
-with open('data/districts.csv', 'r') as csvfile:
-    read = csv.DictReader(csvfile, delimiter=',', quotechar='"')
-    for row in read:
-        wojewodztwo = row['wojewodztwo']
-        if wojewodztwo not in polska.wojewodztwa:
-            polska.wojewodztwa[wojewodztwo] = Wojewodztwo(wojewodztwo)
-        polska.wojewodztwa[wojewodztwo].okregi[row['nr']] = Okrag(
-            row['nr'], row['siedziba'], wojewodztwo)
-
-with open('data/data.csv', 'r') as csvfile:
-    read = csv.DictReader(csvfile, delimiter=',', quotechar='"')
-    for row in read:
-        polska.propaguj(row)
+process_csv('data/districts.csv', polska.dodaj_info_o_okręgach)
+process_csv('data/data.csv', polska.process_csv_row)
 
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates")
 templateEnv = jinja2.Environment(loader=templateLoader)
-TEMPLATE_FILE = 'base.html'
-template = templateEnv.get_template(TEMPLATE_FILE)
-
-create_directories_for_html()
-polska.generuj()
+template_file = 'base.html'
+template = templateEnv.get_template(template_file)
+polska.generate({})
