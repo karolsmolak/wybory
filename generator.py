@@ -58,8 +58,7 @@ class Kraj(Region):
         wojewodztwo = row['wojewodztwo']
         if wojewodztwo not in self.podregiony:
             self.podregiony[wojewodztwo] = Wojewodztwo(wojewodztwo)
-        self.podregiony[wojewodztwo].podregiony[row['nr']] = Okrag(
-            row['nr'], row['siedziba'])
+        self.podregiony[wojewodztwo].podregiony[row['nr']] = Okrag(row['nr'], row['siedziba'])
 
     def get_html(self):
         return 'kraj/polska.html'
@@ -162,6 +161,7 @@ def process_csv(file, row_function):
             row_function(row)
 
 
+create_directories_for_html()
 polska = Kraj()
 process_csv('data/districts.csv', polska.dodaj_info_o_okręgach)
 process_csv('data/data.csv', polska.process_csv_row)

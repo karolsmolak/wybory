@@ -1,5 +1,6 @@
 body {
     font-family:Verdana, Arial;
+    background-image: url("polaroid.png");
 }
 
 header {
@@ -13,14 +14,17 @@ header h1 {
     padding: 0.5em;
 }
 
+h2 {
+    text-align: center;
+    margin-bottom: 0.3em;
+}
+
 a {
     color: black;
-    text-decoration: none;
 }
 
 a:hover {
     color: black;
-    text-decoration: underline;
 }
 
 nav {
@@ -43,6 +47,7 @@ nav {
 #chart-container {
     height: 40vw;
     position: relative;
+    margin-bottom: 20px;
 }
 
 @media screen and (max-width: 1200px) {
@@ -53,17 +58,18 @@ nav {
 
 @media screen and (max-width: 992px) {
   #chart-container {
-      height: 100vw;
+      height: 80vw;
   }
 }
 
-@media screen and (max-width: 430px) {
+@media screen and (max-width: 570px) {
   #chart-container {
-      height: 150vw;
+      height: 120vw;
   }
 }
-@media screen and (max-width: 320px) {
+
+@media screen and (max-width: 360px) {
   #chart-container {
-      height: 180vw;
+      height: 160vw;
   }
 }
