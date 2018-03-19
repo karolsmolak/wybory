@@ -6,24 +6,24 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="../css/style.css">
+    <link rel="stylesheet" type="text/css" href={{ static('css/style.css')}}>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
-    <link href="../jsmaps/jsmaps.css" rel="stylesheet" type="text/css" />
-    <script src="../jsmaps/jsmaps-libs.js"></script>
-    <script src="../jsmaps/jsmaps-panzoom.js"></script>
-    <script src="../jsmaps/jsmaps.min.js"></script>
-    <script src="../maps/poland.js"></script>
-    <script src="../js/script.js"></script>
+    <link href={{ static('jsmaps/jsmaps.css') }} rel="stylesheet" type="text/css" />
+    <script src={{ static('jsmaps/jsmaps-libs.js') }}></script>
+    <script src={{ static('jsmaps/jsmaps-panzoom.js') }}></script>
+    <script src={{ static('jsmaps/jsmaps.min.js') }}></script>
+    <script src={{ static('maps/poland.js') }}></script>
+    <script src={{ static('js/script.js') }}></script>
     <title>Wybory Prezydenta Rzeczypospolitej Polskiej 2000</title>
 </head>
 <body>
 <header>
-    <h1>Wybory Prezydenta Rzeczypospolitej Polskiej 2000 - wyniki oficjalne</h1>
+    <h1><a href="/">Wybory Prezydenta Rzeczypospolitej Polskiej 2000 - wyniki oficjalne</a></h1>
 </header>
 <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
-    <a class="navbar-brand" href="../kraj/polska.html">Polska</a>
+    <a class="navbar-brand" href={{ url('kraj') }}>Polska</a>
     <ul class="navbar-nav">
-        {%- for region, link in linki.items() %}
+        {%- for region, link in linki %}
         <li class = "nav-item"><a class="nav-link" href = {{ link }} >{{ region }}</a></li>
         {%- endfor %}
         {%- if gdzie_jesteśmy != "Polska" %}
@@ -101,8 +101,8 @@
     </div>
 </div>
 <script>
-    var candidates = {{ wyniki.keys() | list }};
-    var results = {{ wyniki.values() | list }};
+    var candidates = {{ wyniki.keys() | list | safe }};
+    var results = {{ wyniki.values() | list | safe }};
     make_chart(candidates, results);
     {%- if gdzie_jesteśmy == "Polska" %}
     make_map();
