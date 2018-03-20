@@ -1,0 +1,4 @@
+django
+xlrd
+pandas
+jinja2
