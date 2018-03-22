@@ -23,19 +23,19 @@
 <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
     <a class="navbar-brand" href="../kraj/polska.html">Polska</a>
     <ul class="navbar-nav">
-        {%- for region, link in linki.items() %}
+        {%- for region, link in links %}
         <li class = "nav-item"><a class="nav-link" href = {{ link }} >{{ region }}</a></li>
         {%- endfor %}
-        {%- if gdzie_jesteśmy != "Polska" %}
-        <li class="nav-item"><a class="nav-link active" href="#">{{ gdzie_jesteśmy }}</a></li>
+        {%- if me != "Polska" %}
+        <li class="nav-item"><a class="nav-link active" href="#">{{ me }}</a></li>
         {%- endif %}
-        {%- if dzieci %}
+        {%- if children %}
         <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">...
             <span class="caret"></span></a>
-            {%- if gdzie_jesteśmy != "Polska" %}
+            {%- if me != "Polska" %}
             <ul class="dropdown-menu scrollable-menu">
-                {%- for region, link in dzieci.items()  %}
+                {%- for region, link in children  %}
                 <li class = "dropdown-item"><a href={{ link }}>{{region}}</a></li>
                 {%- endfor %}
             </ul>
@@ -61,12 +61,12 @@
                 </tr>
                 </thead>
                 <tbody>
-                {%- for key, value in wyniki.items() %}
+                {%- for key, value in results.items() %}
                 <tr>
                     <td>{{ key }}</td>
                     <td>{{ value }}</td>
-                    {%- if statystyki['Głosy ważne'] != 0 %}
-                    <td>{{ "{0:.2f}%".format(100 * value / statystyki['Głosy ważne'], 2) }}</td>
+                    {%- if statistics['Głosy ważne'] != 0 %}
+                    <td>{{ "{0:.2f}%".format(100 * value / statistics['Głosy ważne'], 2) }}</td>
                     {%- else %}
                     <td>0.00%</td>
                     {%- endif %}
@@ -85,26 +85,26 @@
             <h2>Statystyka ogółem</h2>
             <dl>
                 <dt>Liczba uprawnionych do głosowania</dt>
-                <dd>{{ statystyki['Uprawnieni'] }}</dd>
+                <dd>{{ statistics['Uprawnieni'] }}</dd>
                 <dt>Liczba wydanych kart do głosowania</dt>
-                <dd>{{ statystyki['Wydane karty'] }}</dd>
+                <dd>{{ statistics['Wydane karty'] }}</dd>
                 <dt>Liczba kart wyjętych z urny</dt>
-                <dd>{{ statystyki['Głosy ważne'] + statystyki['Głosy nieważne'] }}</dd>
+                <dd>{{ statistics['Głosy ważne'] + statistics['Głosy nieważne'] }}</dd>
                 <dt>Liczba ważnych głosów</dt>
-                <dd>{{ statystyki['Głosy ważne'] }}</dd>
+                <dd>{{ statistics['Głosy ważne'] }}</dd>
                 <dt>Liczba nieważnych głosów</dt>
-                <dd>{{ statystyki['Głosy nieważne'] }}</dd>
+                <dd>{{ statistics['Głosy nieważne'] }}</dd>
                 <dt>Frekwencja</dt>
-                <dd>{{ "{0:.2f}%".format(100 * statystyki['Wydane karty'] / statystyki['Uprawnieni'], 2) }}</dd>
+                <dd>{{ "{0:.2f}%".format(100 * statistics['Wydane karty'] / statistics['Uprawnieni'], 2) }}</dd>
             </dl>
         </section>
     </div>
 </div>
 <script>
-    var candidates = {{ wyniki.keys() | list }};
-    var results = {{ wyniki.values() | list }};
+    var candidates = {{ results.keys() | list }};
+    var results = {{ results.values() | list }};
     make_chart(candidates, results);
-    {%- if gdzie_jesteśmy == "Polska" %}
+    {%- if me == "Polska" %}
     make_map();
     {%- endif %}
 </script>

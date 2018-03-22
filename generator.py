@@ -2,6 +2,7 @@
 import csv
 import jinja2
 import os
+from collections import Counter
 
 
 def create_directories_for_html():
@@ -17,108 +18,140 @@ def create_directories_for_html():
         os.mkdir('./webpages/obwody')
 
 
+districts = {}
+boroughs = {}
+
+
 class Region:
     def __init__(self):
-        self.wynik = Wynik({})
-        self.podregiony = {}
+        self.results = Counter()
+        self.statistics = Counter()
+        self.subregions = {}
 
     def process_csv_row(self, row):
-        self.wynik.add({x: row[x] for x in list(row.keys())[7:]})
+        self.results += Counter({x: int(row[x]) for x in list(row.keys())[12:]})
+        self.statistics += Counter({x: int(row[x]) for x in list(row.keys())[7:12]})
         self.push_down(row)
 
-    def push_down(self):
+    def push_down(self, row):
         pass
 
-    def generate(self, linki_do_rodzicow):
-        template.stream(wyniki=self.wynik.wyniki_kandydatow(), statystyki=self.wynik.statystyki(),
-                        linki=linki_do_rodzicow, gdzie_jesteśmy=self.__str__(),
-                        dzieci={podregion.__str__(): '../' + podregion.get_html() for podregion in self.podregiony.values()}).dump(
-            './webpages/' + self.get_html())
-        if self.__str__() != "Polska":
-            linki_do_rodzicow[self.__str__()] = '../' + self.get_html()
-        for podregion in self.podregiony.values():
-            podregion.generate(linki_do_rodzicow)
-            del linki_do_rodzicow[podregion.__str__()]
+    def generate(self):
+        template.stream(results=self.results, statistics=self.statistics,
+                        links=self.get_parent_links(), me=self.__str__(),
+                        children=[subregion.get_hyperlink() for subregion in
+                                  self.subregions.values()]).dump(
+            './webpages/' + self.get_link())
+        for subregion in self.subregions.values():
+            subregion.generate()
 
-    def get_html(self):
+    def get_hyperlink(self):
+        return self.__str__(), '../' + self.get_link()
+
+    def get_link(self):
         pass
 
 
-class Kraj(Region):
+class Country(Region):
     def __init__(self):
         super().__init__()
 
     def push_down(self, row):
-        for k, wojewodztwo in self.podregiony.items():
-            if row['Nr okr.'] in wojewodztwo.podregiony:
-                wojewodztwo.process_csv_row(row)
+        for k, state in self.subregions.items():
+            if row['Nr okr.'] in state.subregions:
+                state.process_csv_row(row)
                 break
 
-    def dodaj_info_o_okręgach(self, row):
-        wojewodztwo = row['wojewodztwo']
-        if wojewodztwo not in self.podregiony:
-            self.podregiony[wojewodztwo] = Wojewodztwo(wojewodztwo)
-        self.podregiony[wojewodztwo].podregiony[row['nr']] = Okrag(row['nr'], row['siedziba'])
+    def add_district_info(self, row):
+        state = row['wojewodztwo']
+        if state not in self.subregions:
+            self.subregions[state] = State(state)
+        districts[row['nr']] = District(row['nr'], row['siedziba'])
+        self.subregions[state].subregions[row['nr']] = districts[row['nr']]
 
-    def get_html(self):
+    def get_link(self):
         return 'kraj/polska.html'
+
+    def get_parent_links(self):
+        return []
 
     def __str__(self):
         return "Polska"
 
 
-class Wojewodztwo(Region):
-    def __init__(self, nazwa):
+class State(Region):
+    def __init__(self, name):
         super().__init__()
-        self.nazwa = nazwa
+        self.name = name
 
     def push_down(self, row):
-        self.podregiony[row['Nr okr.']].process_csv_row(row)
+        self.subregions[row['Nr okr.']].state = self
+        self.subregions[row['Nr okr.']].process_csv_row(row)
 
-    def get_html(self):
-        return 'wojewodztwa/' + self.nazwa + '.html'
+    def get_link(self):
+        return 'wojewodztwa/' + self.name + '.html'
+
+    def get_parent_links(self):
+        return []
 
     def __str__(self):
-        return self.nazwa
+        return self.name
 
 
-class Okrag(Region):
-    def __init__(self, nr, siedziba):
+class District(Region):
+    def __init__(self, nr, headquarters):
         super().__init__()
         self.nr = nr
-        self.siedziba = siedziba
+        self.headquarters = headquarters
 
     def push_down(self, row):
-        if row['Kod gminy'] not in self.podregiony:
-            self.podregiony[row['Kod gminy']] = Gmina(row['Kod gminy'], row['Gmina'])
-        self.podregiony[row['Kod gminy']].process_csv_row(row)
+        if row['Kod gminy'] not in self.subregions:
+            if row['Kod gminy'] not in boroughs:
+                boroughs[row['Kod gminy']] = Borough(row['Kod gminy'], row['Gmina'])
+            borough = boroughs[row['Kod gminy']]
+            self.subregions[row['Kod gminy']] = borough
+            borough.districts.append(self)
+        self.subregions[row['Kod gminy']].process_csv_row(row)
 
-    def get_html(self):
+    def get_link(self):
         return 'okregi/' + self.nr + '.html'
 
+    def get_parent_links(self):
+        return [self.state.get_hyperlink()]
+
     def __str__(self):
-        return 'okrag nr ' + self.nr + ' (' + self.siedziba + ')'
+        return 'okrąg nr ' + self.nr + ' (' + self.headquarters + ')'
 
 
-class Gmina(Region):
-    def __init__(self, kod_gminy, nazwa):
+class Borough(Region):
+    def __init__(self, nr, name):
         super().__init__()
-        self.kod_gminy = kod_gminy
-        self.nazwa = nazwa
+        self.districts = []
+        self.nr = nr
+        self.name = name
 
     def push_down(self, row):
-        self.podregiony[Obwod.max_id] = Obwod(Obwod.max_id, row['Adres'])
-        self.podregiony[Obwod.max_id].process_csv_row(row)
-        Obwod.max_id += 1
+        ambit = Ambit(Ambit.max_id, row['Adres'])
+        self.subregions[Ambit.max_id] = ambit
+        ambit.borough = self
+        ambit.district = districts[row['Nr okr.']]
+        Ambit.max_id += 1
+        ambit.process_csv_row(row)
 
-    def get_html(self):
-        return 'gminy/' + self.kod_gminy + '.html'
+    def get_link(self):
+        return 'gminy/' + self.nr + '.html'
+
+    def get_parent_links(self):
+        links = self.districts[0].get_parent_links()
+        for district in self.districts:
+            links += [district.get_hyperlink()]
+        return links
 
     def __str__(self):
-        return self.nazwa
+        return self.name
 
 
-class Obwod(Region):
+class Ambit(Region):
     max_id = 0
 
     def __init__(self, id, adres):
@@ -129,29 +162,15 @@ class Obwod(Region):
     def push_down(self, row):
         pass
 
-    def get_html(self):
+    def get_link(self):
         return 'obwody/' + str(self.id) + '.html'
+
+    def get_parent_links(self):
+        return self.district.get_parent_links() + [self.district.get_hyperlink()] + \
+               [self.borough.get_hyperlink()]
 
     def __str__(self):
         return self.adres
-
-
-class Wynik:
-    def __init__(self, wyniki):
-        self.wyniki = wyniki
-
-    def add(self, wynik_podregionu):
-        for k, v in wynik_podregionu.items():
-            if k in self.wyniki:
-                self.wyniki[k] += int(v)
-            else:
-                self.wyniki[k] = int(v)
-
-    def wyniki_kandydatow(self):
-        return {x: self.wyniki[x] for x in list(self.wyniki.keys())[5:]}
-
-    def statystyki(self):
-        return {x: self.wyniki[x] for x in list(self.wyniki.keys())[:5]}
 
 
 def process_csv(file, row_function):
@@ -162,12 +181,12 @@ def process_csv(file, row_function):
 
 
 create_directories_for_html()
-polska = Kraj()
-process_csv('data/districts.csv', polska.dodaj_info_o_okręgach)
-process_csv('data/data.csv', polska.process_csv_row)
+poland = Country()
+process_csv('data/districts.csv', poland.add_district_info)
+process_csv('data/data.csv', poland.process_csv_row)
 
 templateLoader = jinja2.FileSystemLoader(searchpath="./templates")
 templateEnv = jinja2.Environment(loader=templateLoader)
 template_file = 'base.html'
 template = templateEnv.get_template(template_file)
-polska.generate({})
+poland.generate()
