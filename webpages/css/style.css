@@ -1,6 +1,6 @@
 body {
     font-family:Verdana, Arial;
-    background-image: url("polaroid.png");
+    background-image: url("../img/polaroid.png");
 }
 
 header {
@@ -12,6 +12,15 @@ header h1 {
     text-align: center;
     margin: 0;
     padding: 0.5em;
+}
+
+header h1 a {
+    color: #f0f0f0;
+}
+
+header h1 a:hover{
+    color: #f0f0f0;
+    text-decoration: none;
 }
 
 h2 {
