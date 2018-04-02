@@ -1,19 +1,29 @@
 <!DOCTYPE html>
-<html lang = "pl">
+<html lang="pl">
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width = device-width, initial-scale = 1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css" href="../css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
-    <link href="../jsmaps/jsmaps.css" rel="stylesheet" type="text/css" />
+    <link href="../jsmaps/jsmaps.css" rel="stylesheet" type="text/css"/>
     <script src="../jsmaps/jsmaps-libs.js"></script>
     <script src="../jsmaps/jsmaps-panzoom.js"></script>
     <script src="../jsmaps/jsmaps.min.js"></script>
     <script src="../maps/poland.js"></script>
     <script src="../js/script.js"></script>
+    <script>
+        var candidates = {{ results.keys() | list }};
+        var results = {{ results.values() | list }};
+        $(function() {
+            make_chart(candidates, results);
+        });
+        {%- if me == "Polska" %}
+        make_map();
+        {%- endif %}
+    </script>
     <title>Wybory Prezydenta Rzeczypospolitej Polskiej 2000</title>
 </head>
 <body>
@@ -24,7 +34,7 @@
     <a class="navbar-brand" href="../kraj/polska.html">Polska</a>
     <ul class="navbar-nav">
         {%- for region, link in links %}
-        <li class = "nav-item"><a class="nav-link" href = {{ link }} >{{ region }}</a></li>
+        <li class="nav-item"><a class="nav-link" href={{ link }} >{{ region }}</a></li>
         {%- endfor %}
         {%- if me != "Polska" %}
         <li class="nav-item"><a class="nav-link active" href="#">{{ me }}</a></li>
@@ -36,7 +46,7 @@
             {%- if me != "Polska" %}
             <ul class="dropdown-menu scrollable-menu">
                 {%- for region, link in children  %}
-                <li class = "dropdown-item"><a href={{ link }}>{{region}}</a></li>
+                <li class="dropdown-item"><a href={{ link }}>{{region}}</a></li>
                 {%- endfor %}
             </ul>
             {%- else %}
@@ -48,11 +58,11 @@
         {%- endif %}
     </ul>
 </nav>
-<div class = "container-fluid">
-    <div class = "row">
-        <section class = "col-lg-4">
+<div class="container-fluid">
+    <div class="row">
+        <section class="col-lg-4">
             <h2>Wyniki poszczególnych kandydatów</h2>
-            <table class = "table">
+            <table class="table">
                 <thead>
                 <tr>
                     <th>Kandydat</th>
@@ -75,13 +85,13 @@
                 </tbody>
             </table>
         </section>
-        <section class = "col-lg-5">
+        <section class="col-lg-5">
             <h2>Procentowa liczba głosów</h2>
-            <div id = "chart-container">
+            <div id="chart-container">
                 <canvas id="chart"></canvas>
             </div>
         </section>
-        <section class = "col-lg-3 text-center">
+        <section class="col-lg-3 text-center">
             <h2>Statystyka ogółem</h2>
             <dl>
                 <dt>Liczba uprawnionych do głosowania</dt>
@@ -100,13 +110,5 @@
         </section>
     </div>
 </div>
-<script>
-    var candidates = {{ results.keys() | list }};
-    var results = {{ results.values() | list }};
-    make_chart(candidates, results);
-    {%- if me == "Polska" %}
-    make_map();
-    {%- endif %}
-</script>
 </body>
 </html>
